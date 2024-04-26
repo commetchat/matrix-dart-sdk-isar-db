@@ -10,5 +10,5 @@ Future<MatrixSdkIsarDatabase> getIsarDatabase(Client? c) async {
       .systemTempDirectory
       .createTemp('dart-sdk-tests-database');
 
-  return MatrixSdkIsarDatabase.init(tempPath.path);
+  return MatrixSdkIsarDatabase.init(tempPath.path, "test");
 }

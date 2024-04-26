@@ -35,7 +35,8 @@ import 'package:matrix_dart_sdk_isar_db/schemas/user_device_key.dart';
 import 'package:matrix_dart_sdk_isar_db/schemas/user_device_key_info.dart';
 
 class MatrixSdkIsarDatabase extends DatabaseApi {
-  static Future<MatrixSdkIsarDatabase> init(String directory) async {
+  static Future<MatrixSdkIsarDatabase> init(
+      String directory, String name) async {
     var instance = await Isar.open([
       SeenDeviceIdSchema,
       SeenPublicKeySchema,
@@ -57,7 +58,7 @@ class MatrixSdkIsarDatabase extends DatabaseApi {
       OutboundGroupSessionDataSchema,
       SSSSCacheDataSchema,
       PresenceDataSchema,
-    ], directory: directory);
+    ], directory: directory, name: name);
     return MatrixSdkIsarDatabase._(instance);
   }
 
@@ -502,8 +503,11 @@ class MatrixSdkIsarDatabase extends DatabaseApi {
           continue;
         }
 
-        var event = Event.fromJson(jsonDecode(state.content), room);
-        room.setState(event);
+        var content = jsonDecode(state.content) as Map<String, dynamic>;
+        for (var entry in content.values) {
+          var event = Event.fromJson(entry, room);
+          room.setState(event);
+        }
       }
 
       var accountDatas = await instance.roomAccountDatas.where().findAll();
@@ -558,7 +562,8 @@ class MatrixSdkIsarDatabase extends DatabaseApi {
             .findAll();
 
         for (var state in states) {
-          room.setState(Event.fromJson(jsonDecode(state.content), room));
+          var content = jsonDecode(state.content)[''];
+          room.setState(Event.fromJson(content, room));
         }
       }
 
@@ -1209,7 +1214,10 @@ class MatrixSdkIsarDatabase extends DatabaseApi {
 
             state.roomId = eventUpdate.roomID;
             state.type = type;
-            state.content = jsonEncode(eventUpdate.content);
+
+            var content = jsonDecode(state.content);
+            content[stateKey] = eventUpdate.content;
+            state.content = jsonEncode(content);
             await instance.preloadRoomStates.put(state);
           } else {
             var state = await instance.nonPreloadRoomStates

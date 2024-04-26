@@ -7,5 +7,5 @@ class PreloadRoomState {
   Id id = Isar.autoIncrement;
   late String roomId;
   late String type;
-  late String content;
+  late String content = "{}";
 }
