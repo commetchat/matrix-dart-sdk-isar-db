@@ -631,32 +631,21 @@ class MatrixSdkIsarDatabase extends DatabaseApi {
         for (var entry in keyInfos) entry.userId: entry.outdated
       };
 
-      final userDeviceKeys = {
-        for (var item in await instance.userDeviceKeys.where().findAll())
-          item.userId: item
-      };
+      final userDeviceKeys = await instance.userDeviceKeys.where().findAll();
 
-      final userCrossSigningKeys = {
-        for (var item in await instance.userCrossSigningKeys.where().findAll())
-          item.userId: item
-      };
+      final userCrossSigningKeys =
+          await instance.userCrossSigningKeys.where().findAll();
+
       final res = <String, DeviceKeysList>{};
 
       for (final entry in keyInfos) {
-        var deviceKeys =
-            userDeviceKeys.keys.where((element) => element == entry.userId);
+        var crossSigningKeys = userCrossSigningKeys
+            .where((element) => element.userId == entry.userId)
+            .toList();
 
-        var crossSigningKeys = userCrossSigningKeys.keys
-            .where((element) => element == entry.userId);
-
-        var childEntries = deviceKeys.map((key) => userDeviceKeys[key]);
-        childEntries = childEntries.where((element) => element != null);
-
-        var crossSigningEntries =
-            crossSigningKeys.map((key) => userCrossSigningKeys[key]);
-
-        crossSigningEntries =
-            crossSigningEntries.where((element) => element != null);
+        var childEntries = userDeviceKeys
+            .where((element) => element.userId == entry.userId)
+            .toList();
 
         res[entry.userId] = DeviceKeysList.fromDbJson(
             {
@@ -666,15 +655,15 @@ class MatrixSdkIsarDatabase extends DatabaseApi {
             },
             childEntries
                 .map((e) => {
-                      "device_id": e!.deviceId,
+                      "device_id": e.deviceId,
                       "verified": e.verified,
                       "blocked": e.blocked,
                       "content": jsonDecode(e.content)
                     })
                 .toList(),
-            crossSigningEntries
+            crossSigningKeys
                 .map((e) => <String, dynamic>{
-                      "public_key": e!.publicKey,
+                      "public_key": e.publicKey,
                       "verified": e.verified,
                       "blocked": e.blocked,
                       "content": jsonDecode(e.content ?? "{}")
