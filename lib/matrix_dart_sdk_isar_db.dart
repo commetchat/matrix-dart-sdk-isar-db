@@ -33,33 +33,43 @@ import 'package:matrix_dart_sdk_isar_db/schemas/to_device_queue.dart';
 import 'package:matrix_dart_sdk_isar_db/schemas/user_cross_signing_key.dart';
 import 'package:matrix_dart_sdk_isar_db/schemas/user_device_key.dart';
 import 'package:matrix_dart_sdk_isar_db/schemas/user_device_key_info.dart';
+import 'package:synchronized/synchronized.dart';
 
 class MatrixSdkIsarDatabase extends DatabaseApi {
+  // We use this lock to make sure we are only initializing one
+  // database instance at a time, seems like Isar was getting confused
+  // And we were getting back different instances than we asked for :/
+  static Lock lock = Lock();
+
   static Future<MatrixSdkIsarDatabase> init(
       String directory, String name) async {
-    var instance = await Isar.open([
-      SeenDeviceIdSchema,
-      SeenPublicKeySchema,
-      AccountDataSchema,
-      ClientDataSchema,
-      ToDeviceQueueSchema,
-      OlmSessionDataSchema,
-      UserDeviceKeySchema,
-      UserDeviceKeyInfoSchema,
-      EventDataSchema,
-      PreloadRoomStateSchema,
-      NonPreloadRoomStateSchema,
-      TimelineFragmentDataSchema,
-      RoomAccountDataSchema,
-      RoomMembersSchema,
-      RoomDataSchema,
-      InboundGroupSessionSchema,
-      UserCrossSigningKeySchema,
-      OutboundGroupSessionDataSchema,
-      SSSSCacheDataSchema,
-      PresenceDataSchema,
-    ], directory: directory, name: name);
-    return MatrixSdkIsarDatabase._(instance);
+    var result = await lock.synchronized(() async {
+      var instance = await Isar.open([
+        SeenDeviceIdSchema,
+        SeenPublicKeySchema,
+        AccountDataSchema,
+        ClientDataSchema,
+        ToDeviceQueueSchema,
+        OlmSessionDataSchema,
+        UserDeviceKeySchema,
+        UserDeviceKeyInfoSchema,
+        EventDataSchema,
+        PreloadRoomStateSchema,
+        NonPreloadRoomStateSchema,
+        TimelineFragmentDataSchema,
+        RoomAccountDataSchema,
+        RoomMembersSchema,
+        RoomDataSchema,
+        InboundGroupSessionSchema,
+        UserCrossSigningKeySchema,
+        OutboundGroupSessionDataSchema,
+        SSSSCacheDataSchema,
+        PresenceDataSchema,
+      ], directory: directory, name: name);
+      return MatrixSdkIsarDatabase._(instance);
+    });
+
+    return result;
   }
 
   Isar instance;
